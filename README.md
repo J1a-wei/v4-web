@@ -304,4 +304,3 @@ To block OFAC Sanctioned countries:
   1. Custom Text
   - (e.g. `Because you appear to be a resident of, or trading from, a jurisdiction that violates our terms of use, or have engaged in activity that violates our terms of use, you have been blocked. You may withdraw your funds from the protocol at any time.`)
   2. Default Cloudflare WAF block page
-.
