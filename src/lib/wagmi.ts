@@ -59,9 +59,34 @@ import { validateAgainstAvailableEnvironments } from './network';
 
 // Config
 
+/**
+ * Custom EVM chain: Ethereum Hoodi (chainId: 560048)
+ * RPCs provided by user:
+ * - Default: https://api.chainup.net/hoodi/mainnet/798c74b774b84afa8145f7d68c6def48
+ * - Public:  https://rpc.hoodi.ethpandaops.io
+ */
+const ethereumHoodi: Chain = {
+  id: 560048,
+  name: 'Ethereum Hoodi',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    default: {
+      http: [
+        'https://api.chainup.net/hoodi/mainnet/798c74b774b84afa8145f7d68c6def48',
+        'https://rpc.hoodi.ethpandaops.io',
+      ],
+    },
+    public: {
+      http: ['https://rpc.hoodi.ethpandaops.io'],
+    },
+  },
+  testnet: true,
+};
+
 const WAGMI_SUPPORTED_CHAINS: Chain[] = [
   goerli,
   sepolia,
+  ethereumHoodi,
   arbitrum,
   arbitrumSepolia,
   arbitrumGoerli,
@@ -145,9 +170,9 @@ export const getAlchemyRPCUrlForChainId = (chainId: ChainId) => {
 export const RPCUrlsByChainId = [mainnet, ...WAGMI_SUPPORTED_CHAINS].reduce(
   (chainIdToRpcMap, chain) => {
     const alchemyRPCUrl = getAlchemyRPCUrlForChainId(chain.id.toString() as ChainId);
-    const defaultRPCUrl = chain.rpcUrls.default.http[0];
+    const defaultRPCUrls = chain.rpcUrls.default.http;
     return {
-      [chain.id]: [alchemyRPCUrl, defaultRPCUrl].filter(isTruthy),
+      [chain.id]: [alchemyRPCUrl, ...defaultRPCUrls].filter(isTruthy),
       ...chainIdToRpcMap,
     };
   },
@@ -171,6 +196,8 @@ const defaultSelectedNetwork = getLocalStorage({
   validateFn: validateAgainstAvailableEnvironments,
 });
 const defaultChainId = Number(ENVIRONMENT_CONFIG_MAP[defaultSelectedNetwork].ethereumChainId);
+const allChains =
+  [mainnet, ...WAGMI_SUPPORTED_CHAINS] as unknown as readonly [Chain, ...Chain[]];
 
 export const privyConfig: PrivyClientConfig = {
   embeddedWallets: {
@@ -181,7 +208,10 @@ export const privyConfig: PrivyClientConfig = {
   appearance: {
     theme: '#28283c',
   },
-  defaultChain: defaultChainId === mainnet.id ? mainnet : sepolia,
+  // Privy requires defaultChain to be included in supportedChains.
+  // Keep these in sync with our wagmi chain list.
+  supportedChains: allChains as unknown as Chain[],
+  defaultChain: allChains.find((c) => c.id === defaultChainId) ?? sepolia,
 };
 
 type WalletConnectConfig = {
@@ -219,7 +249,7 @@ const getWalletconnect2ConnectorOptions = (
 });
 
 export const config = createConfig({
-  chains: [mainnet, ...WAGMI_SUPPORTED_CHAINS],
+  chains: allChains,
   transports: RPCTransports,
 });
 
